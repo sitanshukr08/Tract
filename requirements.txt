@@ -1,12 +1,15 @@
-streamlit==1.52.1
-yt-dlp==2025.11.12
-requests==2.32.5
-openai-whisper==20250625
-transformers==4.57.3
-torch==2.9.1
-yake==0.6.0
-sentence-transformers==5.1.2
-scikit-learn==1.7.2
-accelerate==1.12.0
-numba==0.62.1
-tiktoken==0.8.0
+﻿--extra-index-url https://download.pytorch.org/whl/cu124
+torch
+torchvision
+torchaudio
+streamlit
+yt-dlp
+openai-whisper
+sentence-transformers
+transformers
+yake
+scikit-learn
+numpy
+tiktoken
+groq
+python-dotenv
