@@ -1,8 +1,6 @@
-# ⚡ Tract | Media Intelligence
+# ⚡ Tract | AI Media Analysis Suite
 
-**Next-Generation Media Ingestion & Neural Analysis Suite**
-
-Tract is a powerful Streamlit-based application that combines high-fidelity media extraction with lightning-fast AI analysis. Download video/audio from YouTube or Instagram, transcribe content natively in any language using **Groq Whisper**, and leverage state-of-the-art LLMs (**Mixtral 8x7B & LLaMA 3**) for semantic chapter detection, summarization, and key-entity extraction.
+Tract is a Streamlit application that processes long-form media (YouTube videos, Twitter links, audio files) to generate transcripts, structured summaries, and semantic chapters. Powered by the Groq API, it allows you to extract notes and interact with the transcript via a chat interface.
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
@@ -11,50 +9,38 @@ Tract is a powerful Streamlit-based application that combines high-fidelity medi
 
 ---
 
-## 📋 Table of Contents
-
-- [✨ Features](#-features)
-- [🚀 Architecture & Models](#-architecture--models)
-- [💻 Installation](#-installation)
-- [📖 Usage](#-usage)
-- [⚙️ Configuration](#-configuration)
-- [🔧 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-
----
-
 ## ✨ Features
 
-### 🎬 Media Asset Extractor
-- **High-Fidelity Video**: Download videos in multiple resolutions (up to 4K) directly to your local drive.
-- **Audio Extraction**: Seamlessly rip audio streams into MP3, WAV, or FLAC formats.
-- **Safe Extraction**: Uses robust `yt-dlp` backend to bypass standard throttles.
+### 💬 Chat with Video (RAG)
+The application holds the generated transcript in memory, allowing you to ask specific questions and extract information directly from the video context using a chat interface.
 
-### 🧠 Neural Analysis (Powered by Groq API)
-- **Lightning-Fast Transcription**: Uses Groq's `whisper-large-v3` infrastructure. Transcribe hours of audio in seconds.
-- **Native Multilingual Support**: Flawlessly understands, transcribes, and analyzes content in Hindi, Japanese, Spanish, English, and more *in their native scripts*.
-- **Semantic Chapter Segments**: Uses `sentence-transformers` and cosine similarity to map out dynamic, logical chapters based on topic shifts, rather than arbitrary time codes.
-- **LLM-Powered Summarization**: Summarizes massive transcripts using a 32k context window via **Mixtral 8x7B**.
-- **Smart Classification & Entities**: Uses **LLaMA 3** for zero-shot topic classification and keyword extraction.
+### 🧠 Summarization for Long Media
+To handle multi-hour transcripts without exceeding API token limits, Tract extracts brief introductions from detected chapters to create a condensed outline. This outline is then passed to the LLM to generate the final Markdown study notes.
 
-### 💎 Premium UI/UX & Exports
-- **Modern Interface**: Designed with a sleek Dark Zinc/Indigo theme, glassmorphism cards, and interactive data pills.
-- **Structured Data Exports**: Export your generated intelligence as structured JSON, raw Text transcripts, or timestamped Subtitles (.srt).
+### 🧮 Topic Classification
+Instead of relying solely on an LLM prompt for topic detection, the app uses local `sentence-transformers` (`all-MiniLM-L6-v2`) to compute the cosine similarity between the transcript and predefined category vectors, applying softmax to generate a confidence score.
+
+### 🌍 Multi-Lingual Handling (Hinglish)
+The audio transcription layer uses vocabulary seeding to better handle code-switching (e.g., mixing Hindi and English). The LLM is then prompted to translate and synthesize the final summary and chapters in English.
+
+### 🗂️ UI & Exports
+- **Embedded Player:** Watch the source media alongside the generated notes.
+- **Exports:** Download study notes as Markdown (`.md`), or extract raw Transcripts (`.txt`) and Subtitles (`.srt`).
+- **Semantic Chapters:** Video is chunked by topic shifts based on vector distance, rather than fixed time intervals.
 
 ---
 
 ## 🚀 Architecture & Models
 
-Tract has moved away from heavy local processing to an optimized API/Local hybrid approach:
+Tract uses a hybrid pipeline combining local processing and cloud inference:
 
 | Pipeline Step | Technology / Model | Execution |
 |---------------|--------------------|-----------|
-| **Ingestion** | `yt-dlp` + `ffmpeg` | Local |
-| **Speech-to-Text** | Whisper Large V3 / Turbo | Cloud (Groq) |
-| **Semantic Routing** | `all-MiniLM-L6-v2` | Local |
-| **Summarization** | Mixtral 8x7B (32k context) | Cloud (Groq) |
-| **Topic & Keywords** | LLaMA 3 (8B) | Cloud (Groq) |
+| **Audio Extraction** | `yt-dlp` + `ffmpeg` | Local |
+| **Speech-to-Text** | `whisper-large-v3-turbo` | Cloud (Groq) |
+| **Vector Embeddings** | `all-MiniLM-L6-v2` | Local |
+| **Data Formatting** | `llama-3.1-8b-instant` | Cloud (Groq) |
+| **Summary & Chat** | `llama-3.3-70b-versatile` | Cloud (Groq) |
 
 ---
 
@@ -64,11 +50,11 @@ Tract has moved away from heavy local processing to an optimized API/Local hybri
 
 | Requirement | Notes |
 |-------------|-------|
-| Python 3.8+ | Core requirement |
-| FFmpeg | **Required** for audio/video stream merging and mp3 extraction |
-| Groq API Key | **Required** for AI analysis (Get one free at [console.groq.com](https://console.groq.com)) |
+| Python 3.9+ | Core requirement |
+| FFmpeg | **Required** for audio extraction and compression |
+| Groq API Key | **Required** for AI analysis (Get one at [console.groq.com](https://console.groq.com)) |
 
-### Step-by-Step Setup
+### Setup
 
 #### 1. Clone the Repository
 ```bash
@@ -76,7 +62,7 @@ git clone https://github.com/yourusername/tract.git
 cd tract
 ```
 
-#### 2. Create a Virtual Environment (Recommended)
+#### 2. Create a Virtual Environment
 ```bash
 python -m venv venv
 
@@ -87,9 +73,9 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-#### 3. Install Core Dependencies
+#### 3. Install Dependencies
 ```bash
-pip install streamlit yt-dlp groq python-dotenv torch sentence-transformers scikit-learn numpy yake
+pip install streamlit yt-dlp groq python-dotenv torch sentence-transformers scikit-learn numpy requests
 ```
 
 #### 4. Install FFmpeg
@@ -118,61 +104,39 @@ GROQ_API_KEY=gsk_your_api_key_here
 ## 📖 Usage
 
 ### Start the Application
-Launch Tract from your terminal:
+Run the following command in your terminal:
 ```bash
-streamlit run tract_app.py
+streamlit run app.py
 ```
-The application will open in your default browser at `http://localhost:8501`.
+The application will open in your browser at `http://localhost:8501`.
 
 ### Workflow
-1. **Target**: Paste a YouTube/Media URL into the central search bar.
-2. **Configure**: Use the sidebar to set your local Output Directory and choose your Whisper model (`large-v3-turbo` for speed, `large-v3` for complex translations).
-3. **Download Assets**: Switch to the **⬇️ Asset Extractor** tab to grab raw MP4 or MP3 files.
-4. **Generate Intelligence**: Switch to the **🧠 Neural Analysis** tab and click **Generate Intelligence Report**. Wait a few seconds for Groq to process the media.
-5. **Export**: Go to the **📦 Export** tab to download your Subtitles (.srt), Transcripts, or JSON metadata.
-
----
-
-## ⚙️ Configuration (Sidebar)
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| **Directory** | Absolute path where video/audio files will be saved. | `~/Downloads` |
-| **Whisper Model** | `large-v3-turbo` (Ultra-fast) vs `large-v3` (Highest accuracy). | `large-v3-turbo` |
-| **Processing Task** | `Transcribe Native` (keeps original language) vs `Translate` (forces output to English). | `Transcribe Native` |
+1. **Input**: Paste a supported media URL into the main input bar.
+2. **Process**: Click "Process Media". The app will download the audio, compress it, and run the transcription/analysis pipeline.
+3. **Review**: Check the dashboard tabs:
+   - **Summary:** Markdown study notes.
+   - **Interactive Q&A:** Chat interface to query the transcript.
+   - **Timeline:** Expandable semantic chapters.
+4. **Export**: Use the download buttons to save your files.
 
 ---
 
 ## 🔧 Troubleshooting
 
-### "FFmpeg Extract Audio Error"
-If your audio downloads fail or get stuck on `.webm`/`.m4a` files:
-- Ensure `ffmpeg` is installed and added to your system's `PATH`.
-- Check installation by running `ffmpeg -version` in your terminal.
+### FFmpeg Errors
+If audio downloads fail or get stuck:
+- Ensure `ffmpeg` is installed and properly added to your system's `PATH`.
+- Verify by running `ffmpeg -version` in your terminal.
 
-### "Groq API Key Missing"
-- Ensure your `.env` file is in the exact same folder as `tract_app.py`.
-- Ensure there are no spaces around the `=` sign in your `.env` file.
+### Missing API Key
+- Check that your `.env` file is in the same directory as `app.py`.
+- Ensure there are no spaces around the `=` sign in the `.env` file.
 
-### "Audio file is X MB — Groq limit is 25 MB"
-- Groq has a hard limit of 25MB per audio file. Tract attempts to compress audio to `32kbps mp3` automatically. If a video is extremely long (e.g., a 4-hour podcast), it may still exceed 25MB. 
-
----
-
-## 🤝 Contributing
-
-Contributions are highly welcome! To contribute:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+### Rate Limits
+If using the free tier of the Groq API, you may hit Requests Per Minute (RPM) limits. The app includes basic retry logic (wait 3 seconds and retry) to help mitigate this.
 
 ---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
